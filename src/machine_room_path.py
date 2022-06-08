@@ -48,15 +48,11 @@ if __name__ == "__main__":
             [1.14, 1.2, 180],
             [0.8, 1.2, 270],
             # [0.44, 0.44, 315],
-            [0, 0, 0],
-            [1.14, 0, 90],
-            [1.14, 1.2, 180],
-            [0.8, 1.2, 270],
-            # [0.44, 0.44, 315],
             [0, 0, 0]
         ]
 
         num_goals = len(points)
+        first_pass_completed = False
         goal_cnt = 0
         rate = rospy.Rate(5)
         if num_goals > 0:
@@ -66,9 +62,15 @@ if __name__ == "__main__":
                 if not wait:
                     rospy.logerr("Action server not available!")
                     rospy.signal_shutdown("Action server not available!")
-                if goal_cnt >= num_goals:
+                goal_cnt += 1
+                if goal_cnt >= num_goals and first_pass_completed:
                     rospy.loginfo("All goals reached.")
                     rospy.signal_shutdown("All goals reached.")
+                elif goal_cnt >= num_goals:
+                    goal_cnt = 0
+                    first_pass_completed = True
+                    rospy.set_param('/move_up', True)
+                    rospy.sleep(10)
                 rate.sleep()
         else:
             rospy.loginfo("No goals given.")
