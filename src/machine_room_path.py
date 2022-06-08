@@ -7,7 +7,9 @@ from actionlib_msgs.msg import *
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf.transformations import quaternion_from_euler
 
+
 class MachineRoomPath:
+
     def __init__(self):
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         wait = self.client.wait_for_server()
@@ -17,7 +19,7 @@ class MachineRoomPath:
             return
         rospy.loginfo("Connected to move base server")
         rospy.loginfo("Starting goals achievements ...")
-        self.points = [
+        self.points = [  # x, y, yaw
             [1.14, 0, 90],
             [1.14, 1.2, 180],
             [0.8, 1.2, 270],
@@ -38,15 +40,15 @@ class MachineRoomPath:
             rospy.signal_shutdown("No goals given.")
             return
 
-    def navigate(self, x, y, yaw=0.0, frame="map"):  # yaw in degrees    
+    def navigate(self, x, y, yaw=0.0, frame="map"):  # yaw in degrees
         self.goal = MoveBaseGoal()
         self.goal.target_pose.header.frame_id = frame
         self.goal.target_pose.header.stamp = rospy.Time.now()
         self.goal.target_pose.pose.position.x = x
         self.goal.target_pose.pose.position.y = y
-    
+
         (self.goal.target_pose.pose.orientation.x, self.goal.target_pose.pose.orientation.y,
-        self.goal.target_pose.pose.orientation.z, self.goal.target_pose.pose.orientation.w) = quaternion_from_euler(0, 0, yaw*math.pi/180)
+         self.goal.target_pose.pose.orientation.z, self.goal.target_pose.pose.orientation.w) = quaternion_from_euler(0, 0, yaw*math.pi/180)
         # default: no rotation
 
         self.client.send_goal(self.goal, self.done_cb)
@@ -60,11 +62,12 @@ class MachineRoomPath:
         self.goal_cnt += 1
         # Reference for terminal status values: http://docs.ros.org/diamondback/api/actionlib_msgs/html/msg/GoalStatus.html
         if status == 2:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request after it started executing, completed execution!")
+            rospy.loginfo("Goal pose "+str(self.goal_cnt) +
+                          " received a cancel request after it started executing, completed execution!")
 
         if status == 3:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached") 
-            if self.goal_cnt< self.num_goals:
+            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" reached")
+            if self.goal_cnt < self.num_goals:
                 rospy.loginfo("Starting toward pose "+str(self.goal_cnt+1))
                 self.navigate(*self.points[self.goal_cnt], "map")
             else:
@@ -73,19 +76,22 @@ class MachineRoomPath:
                 return
 
         if status == 4:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" was aborted by the Action Server")
-            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" aborted, shutting down!")
+            rospy.loginfo("Goal pose "+str(self.goal_cnt) +
+                          " was aborted by the Action Server")
+            rospy.signal_shutdown(
+                "Goal pose "+str(self.goal_cnt)+" aborted, shutting down!")
             return
 
         if status == 5:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" has been rejected by the Action Server")
-            rospy.signal_shutdown("Goal pose "+str(self.goal_cnt)+" rejected, shutting down!")
+            rospy.loginfo("Goal pose "+str(self.goal_cnt) +
+                          " has been rejected by the Action Server")
+            rospy.signal_shutdown(
+                "Goal pose "+str(self.goal_cnt)+" rejected, shutting down!")
             return
 
         if status == 8:
-            rospy.loginfo("Goal pose "+str(self.goal_cnt)+" received a cancel request before it started executing, successfully cancelled!")
-    
-        
+            rospy.loginfo("Goal pose "+str(self.goal_cnt) +
+                          " received a cancel request before it started executing, successfully cancelled!")
 
 
 if __name__ == "__main__":
@@ -96,12 +102,12 @@ if __name__ == "__main__":
         rospy.set_param('/move_base/DWAPlannerROS/', {
             "xy_goal_tolerance": 0.25,
             "yaw_goal_tolerance": 45*math.pi/180,
-            })
+        })
         # http://wiki.ros.org/base_local_planner
         rospy.set_param('/move_base/TrajectoryPlannerROS/', {
             "xy_goal_tolerance": 0.25,
             "yaw_goal_tolerance": 45*math.pi/180,
-            })
+        })
 
         MachineRoomPath()
     except rospy.ROSInterruptException:
