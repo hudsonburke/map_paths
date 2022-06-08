@@ -13,6 +13,7 @@ class MachineRoomPath:
     def __init__(self):
         self.client = actionlib.SimpleActionClient('move_base', MoveBaseAction)
         wait = self.client.wait_for_server()
+        self.first_pass_completed = False
         if not wait:
             rospy.logerr("Action server not available!")
             rospy.signal_shutdown("Action server not available!")
@@ -20,14 +21,9 @@ class MachineRoomPath:
         rospy.loginfo("Connected to move base server")
         rospy.loginfo("Starting goals achievements ...")
         self.points = [  # x, y, yaw
-            [1.14, 0, 90],
-            [1.14, 1.2, 180],
-            [0.8, 1.2, 270],
-            #[0.44, 0.44, 315],
-            [0, 0, 0],
-            [1.14, 0, 90],
-            [1.14, 1.2, 180],
-            [0.8, 1.2, 270],
+            [1.0, 0, 90],
+            [1.0, 1.05, 180],
+            [0.65, 1.05, 270],
             #[0.44, 0.44, 315],
             [0, 0, 0]
         ]
@@ -71,8 +67,17 @@ class MachineRoomPath:
                 rospy.loginfo("Starting toward pose "+str(self.goal_cnt+1))
                 self.navigate(*self.points[self.goal_cnt], "map")
             else:
-                rospy.loginfo("Final goal pose reached!")
-                rospy.signal_shutdown("Final goal pose reached!")
+                if self.goal_cnt >= self.num_goals and self.first_pass_completed:
+                    rospy.loginfo("All goals reached.")
+                    rospy.signal_shutdown("All goals reached.")
+                elif self.goal_cnt >= self.num_goals:
+                    self.goal_cnt = 0
+                    self.first_pass_completed = True
+                    rospy.set_param('/move_up', True)
+                    rospy.sleep(10)
+                    self.navigate(*self.points[self.goal_cnt], "map")
+                # rospy.loginfo("Final goal pose reached!")
+                # rospy.signal_shutdown("Final goal pose reached!")
                 return
 
         if status == 4:
