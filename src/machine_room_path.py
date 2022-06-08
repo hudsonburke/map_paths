@@ -8,7 +8,7 @@ from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from tf.transformations import quaternion_from_euler
 
 
-def navigate(x, y, yaw=0.0, frame="map"):  # yaw in degrees
+def generate_goal(x, y, yaw=0.0, frame="map"):  # yaw in degrees
     goal = MoveBaseGoal()
     goal.target_pose.header.frame_id = frame
     goal.target_pose.header.stamp = rospy.Time.now()
@@ -18,44 +18,7 @@ def navigate(x, y, yaw=0.0, frame="map"):  # yaw in degrees
     (goal.target_pose.pose.orientation.x, goal.target_pose.pose.orientation.y,
         goal.target_pose.pose.orientation.z, goal.target_pose.pose.orientation.w) = quaternion_from_euler(0, 0, yaw*math.pi/180)
     # default: no rotation
-    client.send_goal(goal, done_cb)
-
-
-def done_cb(status, result):
-    # https://hotblackrobotics.github.io/en/blog/2018/01/29/seq-goals-py/
-    goal_cnt += 1
-    # Reference for terminal status values: http://docs.ros.org/diamondback/api/actionlib_msgs/html/msg/GoalStatus.html
-    if status == 2:
-        rospy.loginfo("Goal pose "+str(goal_cnt) +
-                      " received a cancel request after it started executing, completed execution!")
-
-    if status == 3:
-        rospy.loginfo("Goal pose "+str(goal_cnt)+" reached")
-        if goal_cnt < num_goals:
-            rospy.loginfo("Starting toward pose "+str(goal_cnt+1))
-            navigate(*points[goal_cnt], "map")
-        else:
-            rospy.loginfo("Final goal pose reached!")
-            rospy.signal_shutdown("Final goal pose reached!")
-            return
-
-    if status == 4:
-        rospy.loginfo("Goal pose "+str(goal_cnt) +
-                      " was aborted by the Action Server")
-        rospy.signal_shutdown(
-            "Goal pose "+str(goal_cnt)+" aborted, shutting down!")
-        return
-
-    if status == 5:
-        rospy.loginfo("Goal pose "+str(goal_cnt) +
-                      " has been rejected by the Action Server")
-        rospy.signal_shutdown(
-            "Goal pose "+str(goal_cnt)+" rejected, shutting down!")
-        return
-
-    if status == 8:
-        rospy.loginfo("Goal pose "+str(goal_cnt) +
-                      " received a cancel request before it started executing, successfully cancelled!")
+    return goal
 
 
 if __name__ == "__main__":
@@ -98,7 +61,14 @@ if __name__ == "__main__":
         rate = rospy.Rate(5)
         if num_goals > 0:
             while not rospy.is_shutdown():
-                navigate(*points[goal_cnt], "map")
+                client.send_goal(generate_goal(*points[goal_cnt], "map"))
+                wait = client.wait_for_result()
+                if not wait:
+                    rospy.logerr("Action server not available!")
+                    rospy.signal_shutdown("Action server not available!")
+                if goal_cnt >= num_goals:
+                    rospy.loginfo("All goals reached.")
+                    rospy.signal_shutdown("All goals reached.")
                 rate.sleep()
         else:
             rospy.loginfo("No goals given.")
