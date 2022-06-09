@@ -44,9 +44,9 @@ if __name__ == "__main__":
         rospy.loginfo("Connected to move base server")
         rospy.loginfo("Starting goals achievements ...")
         points = [
-            [1.14, 0, 90],
-            [1.14, 1.2, 180],
-            [0.8, 1.2, 270],
+            [1.0, 0, 90],
+            [1.0, 1.05, 180],
+            [0.65, 1.05, 270],
             # [0.44, 0.44, 315],
             [0, 0, 0]
         ]
