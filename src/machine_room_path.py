@@ -57,6 +57,13 @@ if __name__ == "__main__":
         rate = rospy.Rate(5)
         if num_goals > 0:
             while not rospy.is_shutdown():
+                if not first_pass_completed:
+                    for angle in range(0, 360, 15):
+                        client.send_goal([0.5, 0.6, angle], "map")
+                        wait = client.wait_for_result()
+                    if not wait:
+                        rospy.logerr("Action server not available!")
+                        rospy.signal_shutdown("Action server not available!")
                 client.send_goal(generate_goal(*points[goal_cnt], "map"))
                 wait = client.wait_for_result()
                 if not wait:
